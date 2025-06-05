@@ -18,12 +18,7 @@ def login_user():
   if not user or not check_password(data["password"], user.password):
     return jsonify({"error": "Invalid email or password"}), 401
   
-  token_data = {
-    "user_id": user.id,
-    "role": user.role
-  }
-  
-  token = generate_token(token_data)
+  token = generate_token(user)
   
   return jsonify({
     "message": "User logged in successfully",
@@ -31,7 +26,7 @@ def login_user():
     "user": {
       "id": user.id,
       "email": user.email,
-      "role": user.role, 
+      "role": user.role.value, 
       "name": user.name
     }
   }), 200

@@ -5,6 +5,8 @@ from datetime import datetime, timedelta, timezone
 from flask import current_app, jsonify, request
 import jose
 
+from sql.models import UserRole
+
 bcrypt = Bcrypt()
 
 def hash_password(plain_password: str) -> str:
@@ -13,9 +15,10 @@ def hash_password(plain_password: str) -> str:
 def check_password(plain_password: str, hashed_password: str) -> bool:
   return bcrypt.check_password_hash(hashed_password, plain_password)
 
-def generate_token(user_id):
+def generate_token(user):
   payload = {
-    "sub": str(user_id),
+    "sub": str(user.id),
+    "role": user.role.value,
     "exp": datetime.now(timezone.utc) + timedelta(days=1)
   }
   
@@ -61,7 +64,7 @@ def doctor_required(f):
         try:
             token = auth_header.split(" ")[1]
             payload = jwt.decode(token, current_app.config["SECRET_KEY"], algorithms=["HS256"])
-            if payload.get("role") != "doctor":
+            if payload.get("role") != UserRole.DOCTOR.value:
                 return jsonify({"message": "Doctor role required"}), 403
             doctor_id = payload.get("sub") 
         except JWTError:

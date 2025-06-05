@@ -5,7 +5,7 @@ from sql.models import db, Diagnosis, User
 from sql.blueprints.diagnosis.schemas import diagnosis_schema, diagnoses_schema
 from sql.utils.auth import doctor_required
 
-@diagnoses_bp.route("/patients/<int:patient_id>/diagnoses", methods=["POST"])
+@diagnoses_bp.route("/<int:patient_id>/diagnosis", methods=["POST"])
 @doctor_required
 def create_diagnosis(patient_id, doctor_id):
   data = request.get_json()
@@ -19,21 +19,17 @@ def create_diagnosis(patient_id, doctor_id):
   if not patient:
     return jsonify({"message": "Patient not found"}), 404
   
-  diagnosis = Diagnosis(
-    diagnosis_name=validated_data["diagnosis_name"],
-    description=validated_data["description"],
-    patient_id=patient_id,
-    doctor_id=doctor_id
-  )
   
   existing = Diagnosis.query.filter_by(
-    diagnosis_name=validated_data["diagnosis_name"],
-    patient_id=patient_id,
-    doctor_id=doctor_id
+    diagnosis_name=validated_data.diagnosis_name,
+    patient_id=patient_id
   ).first()
   
   if existing:
     return jsonify({"message": "This diagnosis already exists for this patient"}), 409
+  
+  diagnosis = validated_data
+  diagnosis.patient_id = patient_id
   
   db.session.add(diagnosis)
   db.session.commit()
