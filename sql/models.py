@@ -1,6 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import Enum, Date, DateTime
+from marshmallow import fields, ValidationError
 from datetime import date, datetime, timezone
 import enum
 
@@ -19,6 +20,23 @@ class AppointmentStatus(enum.Enum):
   CANCELLED = "cancelled"
   NO_SHOW = "no_show"
 
+
+class EnumField(fields.Field):
+  def __init__(self, enum, *args, **kwargs):
+    self.enum = enum
+    super().__init__(*args, **kwargs)
+    
+  def _serialize(self, value, attr, obj, **kwargs):
+    if value is None:
+      return None
+    return value.value if value else None
+  
+  def _deserialize(self, value, attr, data, **kwargs):
+    try:
+      return self.enum(value.lower())
+    except KeyError:
+      raise ValidationError(f"Invalid value '{value}' for enum {self.enum.__name__}")
+
 class User(db.Model):
   __tablename__ = "users"
   
@@ -28,7 +46,11 @@ class User(db.Model):
   email: Mapped[str] = mapped_column(db.String(150), unique=True, nullable=False)
   password: Mapped[str] = mapped_column(db.String(150), nullable=False)
   
-  role: Mapped[UserRole] = mapped_column(Enum(UserRole), default="patient", nullable=False)
+  role: Mapped[UserRole] = mapped_column(
+      Enum(UserRole, values_callable=lambda x: [e.value for e in x]),
+      default=UserRole.PATIENT,
+      nullable=False
+  )
 
 
 class Diagnosis(db.Model):
