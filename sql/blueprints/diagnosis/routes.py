@@ -1,10 +1,38 @@
-from flask import jsonify
-from sql.blueprints.diagnosis import diagnosis_bp
-from sql.models import Diagnosis
-from sql.blueprints.diagnosis.schemas import diagnoses_schema
-from sql.utils.auth import token_required
+from flask import jsonify, request
+from marshmallow import ValidationError
+from sql.blueprints.diagnosis import diagnoses_bp
+from sql.models import db, Diagnosis, User
+from sql.blueprints.diagnosis.schemas import diagnosis_schema, diagnoses_schema
+from sql.utils.auth import doctor_required, token_required
 
-@diagnosis_bp.route("/patients/<diagnosis_name>", methods=["GET"])
-def get_patients_with_diagnosis(diagnosis_name, _user_id):
+@diagnoses_bp.route("/patients/<int:patient_id>/diagnoses", methods=["POST"])
+@doctor_required
+def create_diagnosis(patient_id, doctor_id):
+  data = request.get_json()
+  
+  try:
+    validated_data = diagnosis_schema.load(data)
+  except ValidationError as err:
+    return jsonify({"errors": err.messages}), 400
+  
+  patient = User.query.get(patient_id)
+  if not patient:
+    return jsonify({"message": "Patient not found"}), 404
+  
+  diagnosis = Diagnosis(
+    diagnosis_name=validated_data["diagnosis_name"],
+    description=validated_data["description"],
+    patient_id=patient_id,
+    doctor_id=doctor_id
+  )
+  
+  db.session.add(diagnosis)
+  db.session.commit()
+  
+  return jsonify(diagnosis_schema.dump(diagnosis)), 201
+
+@diagnoses_bp.route("/patients/<diagnosis_name>", methods=["GET"])
+@doctor_required
+def get_patients_with_diagnosis(diagnosis_name, _doctor_id):
   diagnoses = Diagnosis.query.filter_by(diagnosis_name=diagnosis_name).all()
   return jsonify(diagnoses_schema.dump(diagnoses)), 200

@@ -12,6 +12,6 @@ def create_app(config_name):
   ma.init_app(app)
   
   app.register_blueprint(user_bp, url_prefix="/users")
-  app.register_blueprint(diagnosis_bp, url_prefix="/diagnosis")
+  app.register_blueprint(diagnosis_bp, url_prefix="/diagnoses")
   
   return app

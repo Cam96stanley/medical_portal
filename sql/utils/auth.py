@@ -1,6 +1,6 @@
 from flask_bcrypt import Bcrypt
 from functools import wraps
-from jose import jwt
+from jose import JWTError, jwt
 from datetime import datetime, timedelta, timezone
 from flask import current_app, jsonify, request
 import jose
@@ -49,3 +49,23 @@ def token_required(f):
     
     return f(user_id, *args, **kwargs)
   return decorated
+
+
+def doctor_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            return jsonify({"message": "Missing token"}), 401
+
+        try:
+            token = auth_header.split(" ")[1]
+            payload = jwt.decode(token, current_app.config["SECRET_KEY"], algorithms=["HS256"])
+            if payload.get("role") != "doctor":
+                return jsonify({"message": "Doctor role required"}), 403
+            doctor_id = payload.get("sub")  # assuming 'sub' is doctor ID
+        except JWTError:
+            return jsonify({"message": "Invalid token"}), 401
+
+        return f(*args, doctor_id=doctor_id, **kwargs)
+    return decorated_function
