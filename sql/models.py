@@ -27,7 +27,7 @@ class User(db.Model):
   email: Mapped[str] = mapped_column(db.String(150), unique=True, nullable=False)
   password: Mapped[str] = mapped_column(db.String(150), nullable=False)
   
-  role: Mapped[UserRole] = mapped_column(Enum(UserRole), nullable=False)
+  role: Mapped[UserRole] = mapped_column(Enum(UserRole), default="patient", nullable=False)
 
 
 class Diagnosis(db.Model):
