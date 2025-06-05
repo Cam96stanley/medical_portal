@@ -100,6 +100,8 @@ class Appointment(db.Model):
 
 
 class Goal(db.Model):
+  __tablename__ = "goals"
+  
   id: Mapped[int] = mapped_column(primary_key=True)
   
   patient_id: Mapped[int] = mapped_column(db.ForeignKey("users.id"), nullable=False)
@@ -138,6 +140,8 @@ class BloodPressure(db.Model):
 
 
 class HeartRate(db.Model):
+  __tablename__ = "heart_rates"
+  
   id: Mapped[int] = mapped_column(primary_key=True)
   patient_id: Mapped[int] = mapped_column(db.ForeignKey("users.id"), nullable=False)
   
