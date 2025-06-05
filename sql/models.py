@@ -24,6 +24,7 @@ class User(db.Model):
   
   id: Mapped[int] = mapped_column(primary_key=True)
   name: Mapped[str] = mapped_column(db.String(100), nullable=False)
+  dob: Mapped[date] = mapped_column(Date, nullable=True)
   email: Mapped[str] = mapped_column(db.String(150), unique=True, nullable=False)
   password: Mapped[str] = mapped_column(db.String(150), nullable=False)
   

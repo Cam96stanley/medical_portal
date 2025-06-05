@@ -83,16 +83,22 @@ def update_user(user_id):
   
   data = request.json
   
-  if "name" in data:
-    user.name = data["name"]
-  if "email" in data:
-    user.email = data["email"]
-  if "password" in data:
-    user.password = hash_password(data["password"])
-  
   try:
+    
+    updated_data = user_schema.load(data, partial=True)
+    
+    if "password" in data:
+      user.password = hash_password(data["password"])
+    
+    for key, value in updated_data.items():
+      if key != "password":
+        setattr(user, key, value)
+    
     db.session.commit()
     return jsonify(return_user_schema.dump(user)), 200
+
+  except ValidationError as err:
+    return jsonify(err.messages), 400
   except IntegrityError:
     db.session.rollback()
     return jsonify({"error": "Email already in use"}), 409
