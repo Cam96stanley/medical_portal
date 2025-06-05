@@ -3,7 +3,7 @@ from marshmallow import ValidationError
 from sql.blueprints.diagnosis import diagnoses_bp
 from sql.models import db, Diagnosis, User
 from sql.blueprints.diagnosis.schemas import diagnosis_schema, diagnoses_schema
-from sql.utils.auth import doctor_required, token_required
+from sql.utils.auth import doctor_required
 
 @diagnoses_bp.route("/patients/<int:patient_id>/diagnoses", methods=["POST"])
 @doctor_required
@@ -25,6 +25,15 @@ def create_diagnosis(patient_id, doctor_id):
     patient_id=patient_id,
     doctor_id=doctor_id
   )
+  
+  existing = Diagnosis.query.filter_by(
+    diagnosis_name=validated_data["diagnosis_name"],
+    patient_id=patient_id,
+    doctor_id=doctor_id
+  ).first()
+  
+  if existing:
+    return jsonify({"message": "This diagnosis already exists for this patient"}), 409
   
   db.session.add(diagnosis)
   db.session.commit()
