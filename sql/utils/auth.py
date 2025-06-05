@@ -63,7 +63,7 @@ def doctor_required(f):
             payload = jwt.decode(token, current_app.config["SECRET_KEY"], algorithms=["HS256"])
             if payload.get("role") != "doctor":
                 return jsonify({"message": "Doctor role required"}), 403
-            doctor_id = payload.get("sub")  # assuming 'sub' is doctor ID
+            doctor_id = payload.get("sub") 
         except JWTError:
             return jsonify({"message": "Invalid token"}), 401
 
