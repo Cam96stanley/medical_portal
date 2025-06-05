@@ -5,7 +5,7 @@ from sql.models import db, Diagnosis, User
 from sql.blueprints.diagnosis.schemas import diagnosis_schema, diagnoses_schema
 from sql.utils.auth import doctor_required
 
-@diagnoses_bp.route("/<int:patient_id>/diagnosis", methods=["POST"])
+@diagnoses_bp.route("/<int:patient_id>", methods=["POST"])
 @doctor_required
 def create_diagnosis(patient_id, doctor_id):
   data = request.get_json()
