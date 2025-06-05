@@ -44,7 +44,10 @@ class Diagnosis(db.Model):
   diagnosis_date: Mapped[date] = mapped_column(Date, nullable=False)
   notes: Mapped[str] = mapped_column(db.String(5000), nullable=False)
   
-  created_at: 
+  created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),
+                                              nullable=False,
+                                              default=lambda: datetime.now(timezone.utc)
+                                              )
   
   patient = db.relationship("User", backref="diagnoses", foreign_keys=[patient_id])
 
