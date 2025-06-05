@@ -71,3 +71,45 @@ def get_user(user_id):
     return jsonify({"message": "No user found with that id"}), 404
   
   return jsonify(return_user_schema.dump(user)), 200
+
+
+@user_bp.route("/me", methods=["PATCH"])
+@token_required
+def update_user(user_id):
+  user = db.session.get(User, user_id)
+  
+  if not user:
+    return jsonify({"error": "user not found"}), 404
+  
+  data = request.json
+  
+  if "name" in data:
+    user.name = data["name"]
+  if "email" in data:
+    user.email = data["email"]
+  if "password" in data:
+    user.password = hash_password(data["password"])
+  
+  try:
+    db.session.commit()
+    return jsonify(return_user_schema.dump(user)), 200
+  except IntegrityError:
+    db.session.rollback()
+    return jsonify({"error": "Email already in use"}), 409
+  except Exception:
+    db.session.rollback()
+    return jsonify({"error": "Database error"}), 500
+
+
+@user_bp.route("/me", methods=["DELETE"])
+@token_required
+def delete_user(user_id):
+  user = db.session.get(User, user_id)
+  
+  if not user:
+    return jsonify({"message": "User not found"}), 404
+  
+  db.session.delete(user)
+  db.session.commit()
+  
+  return jsonify({"message": f"User {user.id} deleted successfully"}), 200
