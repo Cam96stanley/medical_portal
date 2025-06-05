@@ -6,6 +6,8 @@ from sql.blueprints.user.schemas import UserSchema
 class DiagnosisSchema(ma.SQLAlchemyAutoSchema):
   patient = ma.Nested(UserSchema)
   
+  patient_id = ma.auto_field(dump_only=True)
+  doctor_id = ma.auto_field(dump_only=True)
   created_at = auto_field(dump_only=True)
   class Meta:
     model = Diagnosis

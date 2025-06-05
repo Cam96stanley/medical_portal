@@ -22,7 +22,8 @@ def create_diagnosis(patient_id, doctor_id):
   
   existing = Diagnosis.query.filter_by(
     diagnosis_name=validated_data.diagnosis_name,
-    patient_id=patient_id
+    patient_id=patient_id,
+    doctor_id=doctor_id
   ).first()
   
   if existing:
@@ -30,6 +31,7 @@ def create_diagnosis(patient_id, doctor_id):
   
   diagnosis = validated_data
   diagnosis.patient_id = patient_id
+  diagnosis.doctor_id = doctor_id
   
   db.session.add(diagnosis)
   db.session.commit()

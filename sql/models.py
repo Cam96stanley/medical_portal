@@ -59,6 +59,7 @@ class Diagnosis(db.Model):
   id: Mapped[int] = mapped_column(primary_key=True)
   
   patient_id: Mapped[int] = mapped_column(db.ForeignKey("users.id"), nullable=False)
+  doctor_id: Mapped[int] = mapped_column(db.ForeignKey("users.id"), nullable=False)
   
   diagnosis_name: Mapped[str] = mapped_column(db.String(150), nullable=False)
   diagnosis_code: Mapped[str] = mapped_column(db.String(50))
@@ -71,6 +72,7 @@ class Diagnosis(db.Model):
                                               default=lambda: datetime.now(timezone.utc)
                                               )
   
+  doctor = db.relationship("User", backref="diagnoses_made", foreign_keys=[doctor_id])
   patient = db.relationship("User", backref="diagnoses", foreign_keys=[patient_id])
 
 
