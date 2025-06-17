@@ -71,6 +71,11 @@ paths:
           examples:
             application/json:
               message: "Invalid email or password"
+        500:
+          description: Internal Server Error - Unexpected error occurred
+          examples:
+            application/json:
+              message: "An unexpected error occurred"
 
   /users:
     post:
@@ -187,6 +192,11 @@ paths:
           examples:
             application/json:
               message: "No user found"
+        500:
+          description: Internal Server Error - Unexpected error occurred
+          examples:
+            application/json:
+              message: "An unexpected error occurred"
 
     patch:
       tags:
@@ -235,13 +245,21 @@ paths:
           examples:
             application/json:
               message: "Email already in use"
+        500:
+          description: Internal Server Error - Unexpected error occurred
+          examples:
+            application/json:
+              message: "An unexpected error occurred"
 
   /diagnoses/{patient_id}:
     post:
       tags:
         - Diagnosis
       summary: Create a diagnosis for a user
-      description: Registers a diagnosis for a patient
+      description: >
+        Registers a diagnosis for a patient.
+
+        **Roles allowed:** doctor
       security:
         - bearerAuth: []
       consumes:
@@ -286,6 +304,16 @@ paths:
               message: "Validation error"
               errors:
                 diagnosis_name: ["Missing data for required field"]
+        401:
+          description: Unauthorized - user not logged in or token missing
+          examples:
+            application/json:
+              message: "Authorization token is missing or invalid"
+        403:
+          description: Forbidden - user does not have doctor role
+          examples:
+            application/json:
+              message: "doctor role required"
         404:
           description: Patient not found - no user with the specified ID exists
           examples:
@@ -296,13 +324,21 @@ paths:
           examples:
             application/json:
               message: "This diagnosis already exists for this patient"
+        500:
+          description: Internal Server Error - Unexpected error occurred
+          examples:
+            application/json:
+              message: "An unexpected error occurred"
 
   /diagnoses/patients/{diagnosis_name}:
     get:
       tags:
         - Diagnosis
-      summary: Get patients with a diagnosis
-      description: Get active patients with a specific diagnosis that are attached to the currently logged in doctor
+      summary: Get patients with a specific diagnosis
+      description: >
+        Get active patients with a specific diagnosis that are attached to the currently logged in doctor.
+
+        **Roles allowed:** doctor
       security:
         - bearerAuth: []
       produces:
@@ -351,6 +387,11 @@ paths:
           examples:
             application/json:
               message: "No patients found with this diagnosis"
+        500:
+          description: Internal Server Error - Unexpected error occurred
+          examples:
+            application/json:
+              message: "An unexpected error occurred"
 
 definitions:
   LoginCredentials:
