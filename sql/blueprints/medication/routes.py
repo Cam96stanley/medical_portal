@@ -7,7 +7,7 @@ from sql.utils.auth import role_required
 
 @medication_bp.route("/", methods=["POST"])
 @role_required(UserRole.DOCTOR)
-def create_medication(doctor_id):
+def create_medication():
   data = request.get_json()
   
   if not data:

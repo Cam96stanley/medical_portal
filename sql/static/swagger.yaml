@@ -236,6 +236,122 @@ paths:
             application/json:
               message: "Email already in use"
 
+  /diagnoses/{patient_id}:
+    post:
+      tags:
+        - Diagnosis
+      summary: Create a diagnosis for a user
+      description: Registers a diagnosis for a patient
+      security:
+        - bearerAuth: []
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: patient_id
+          in: path
+          required: true
+          type: integer
+          description: ID of the patient you are adding the diagnosis to
+        - in: body
+          name: diagnosis
+          required: true
+          description: Diagnosis object to create
+          schema:
+            $ref: "#/definitions/Diagnosis"
+      responses:
+        201:
+          description: User created successfully
+          schema:
+            $ref: "#/definitions/DiagnosisResponse"
+          examples:
+            application/json:
+              id: 1
+              created_at: "2025-06-17T18:50:54"
+              diagnosis_code: "H52-0"
+              diagnosis_date: "2024-10-10"
+              diagnosis_name: "COPD"
+              notes: "Patient has mild COPD symptoms"
+              doctor:
+                id: 1
+                name: "Dr. John Smith"
+              patient:
+                id: 2
+                name: "Jane Doe"
+        400:
+          description: Validation error - required fields are missing or invalid
+          examples:
+            application/json:
+              message: "Validation error"
+              errors:
+                diagnosis_name: ["Missing data for required field"]
+        404:
+          description: Patient not found - no user with the specified ID exists
+          examples:
+            application/json:
+              message: "Patient not found"
+        409:
+          description: Diagnosis already exists for this patient
+          examples:
+            application/json:
+              message: "This diagnosis already exists for this patient"
+
+  /diagnoses/patients/{diagnosis_name}:
+    get:
+      tags:
+        - Diagnosis
+      summary: Get patients with a diagnosis
+      description: Get active patients with a specific diagnosis that are attached to the currently logged in doctor
+      security:
+        - bearerAuth: []
+      produces:
+        - application/json
+      parameters:
+        - name: diagnosis_name
+          in: path
+          required: true
+          type: string
+          description: Name of the diagnosis
+      responses:
+        200:
+          description: Patients retrieved successfully
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/PublicUser"
+          examples:
+            application/json:
+              - id: 1
+                name: "Jane Doe"
+                email: "jane@example.com"
+                role: "patient"
+                dob: "1990-01-01"
+                is_active: true
+                archived_at: null
+              - id: 2
+                name: "Mark Smith"
+                email: "mark@example.com"
+                role: "patient"
+                dob: "1985-09-15"
+                is_active: true
+                archived_at: null
+        401:
+          description: Unauthorized - user not logged in or token missing
+          examples:
+            application/json:
+              message: "Authorization token is missing or invalid"
+        403:
+          description: Forbidden - user does not have doctor role
+          examples:
+            application/json:
+              message: "doctor role required"
+        404:
+          description: No patients found with the given diagnosis
+          examples:
+            application/json:
+              message: "No patients found with this diagnosis"
+
 definitions:
   LoginCredentials:
     type: "object"
@@ -273,7 +389,7 @@ definitions:
               Date of birth is required for users with role "patient", optional for "doctor"
 
   User:
-    type: "object"
+    type: object
     required:
       - id
       - name
@@ -318,14 +434,48 @@ definitions:
         type: string
       role:
         type: string
-        enum: [patient, doctor]
+        enum: [patient, doctor, admin]
         description: >
-          Date of birth is required for users with role "patient", optional for "doctor"
+          Role must be either "patient", "doctor", or "admin"
       dob:
         type: string
         format: date
         description: >
           Date of birth is required for users with the role "patient", optional for "doctor"
+      is_active:
+        type: boolean
+        description: >
+          Defaults to true for active users
+      archived_at:
+        type: string | null
+        format: date-time
+        description: >
+          Automatically is added when changing is_active to false
+
+  Diagnosis:
+    type: object
+    required:
+      - diagnosis_name
+      - diagnosis_code
+      - diagnosis_date
+      - notes
+    properties:
+      diagnosis_name:
+        type: string
+        description: The name of the diagnosis (e.g. "COPD")
+      diagnosis_code:
+        type: string
+        description: ICD-10 code or other classification (e.g. "H52-0")
+        example: "H52-0"
+      diagnosis_date:
+        type: string
+        format: date
+        description: The date the diagnosis was made
+        example: "2024-10-10"
+      notes:
+        type: string
+        description: Additional notes or context about the diagnosis
+        example: "Patient has mild COPD symptoms"
 
   UserUpdate:
     type: object
@@ -345,3 +495,38 @@ definitions:
       email: "j.doe@example.com"
       dob: "1990-05-20"
       role: "patient"
+
+  DiagnosisResponse:
+    type: object
+    properties:
+      id:
+        type: integer
+        format: int64
+      created_at:
+        type: string
+        format: date-time
+      diagnosis_name:
+        type: string
+      diagnosis_code:
+        type: string
+      diagnosis_date:
+        type: string
+        format: date
+      notes:
+        type: string
+      doctor:
+        type: object
+        properties:
+          id:
+            type: integer
+            format: int64
+          name:
+            type: string
+      patient:
+        type: object
+        properties:
+          id:
+            type: integer
+            format: int64
+          name:
+            type: string

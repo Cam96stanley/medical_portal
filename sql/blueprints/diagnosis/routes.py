@@ -3,7 +3,7 @@ from marshmallow import ValidationError
 from sqlalchemy import func
 from sql.blueprints.diagnosis import diagnoses_bp
 from sql.models import UserRole, db, Diagnosis, User
-from sql.blueprints.diagnosis.schemas import diagnosis_schema, diagnoses_schema
+from sql.blueprints.diagnosis.schemas import diagnosis_schema
 from sql.blueprints.user.schemas import return_users_schema
 from sql.utils.auth import role_required
 
@@ -15,12 +15,18 @@ def create_diagnosis(patient_id, user_id):
   
   try:
     validated_data = diagnosis_schema.load(data)
-  except ValidationError as err:
-    return jsonify({"errors": err.messages}), 400
+    
+  except ValidationError as e:
+    return jsonify({
+      "message": "Validation error",
+      "errors": e.messages
+      }), 400
   
   patient = User.query.get(patient_id)
   if not patient:
-    return jsonify({"message": "Patient not found"}), 404
+    return jsonify({
+      "message": "Patient not found"
+      }), 404
   
   
   existing = Diagnosis.query.filter_by(
@@ -30,7 +36,9 @@ def create_diagnosis(patient_id, user_id):
   ).first()
   
   if existing:
-    return jsonify({"message": "This diagnosis already exists for this patient"}), 409
+    return jsonify({
+      "message": "This diagnosis already exists for this patient"
+      }), 409
   
   diagnosis = validated_data
   diagnosis.patient_id = patient_id
@@ -49,7 +57,7 @@ def get_patients_with_diagnosis(diagnosis_name, user_id):
   if not diagnoses:
     return jsonify({"message": "No patients found with this diagnosis"}), 404
   
-  patients = [diagnosis.patient for diagnosis in diagnoses]
+  patients = [diagnosis.patient for diagnosis in diagnoses if diagnosis.patient and diagnosis.patient.is_active]
   unique_patients = list({p.id: p for p in patients}.values())
   
   if not unique_patients:
