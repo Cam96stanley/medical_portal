@@ -1,8 +1,10 @@
 from flask import jsonify, request
 from marshmallow import ValidationError
+from sqlalchemy import func
 from sql.blueprints.diagnosis import diagnoses_bp
 from sql.models import db, Diagnosis, User
 from sql.blueprints.diagnosis.schemas import diagnosis_schema, diagnoses_schema
+from sql.blueprints.user.schemas import return_users_schema
 from sql.utils.auth import doctor_required
 
 @diagnoses_bp.route("/<int:patient_id>", methods=["POST"])
@@ -40,6 +42,16 @@ def create_diagnosis(patient_id, doctor_id):
 
 @diagnoses_bp.route("/patients/<diagnosis_name>", methods=["GET"])
 @doctor_required
-def get_patients_with_diagnosis(diagnosis_name, _doctor_id):
-  diagnoses = Diagnosis.query.filter_by(diagnosis_name=diagnosis_name).all()
-  return jsonify(diagnoses_schema.dump(diagnoses)), 200
+def get_patients_with_diagnosis(diagnosis_name, doctor_id):
+  diagnoses = Diagnosis.query.filter(func.lower(Diagnosis.diagnosis_name) == diagnosis_name.lower()).all()
+  
+  if not diagnoses:
+    return jsonify({"message": "No patients found with this diagnosis"}), 404
+  
+  patients = [diagnosis.patient for diagnosis in diagnoses]
+  unique_patients = list({p.id: p for p in patients}.values())
+  
+  if not unique_patients:
+    return jsonify({"message": "No patients found"}), 404
+  
+  return jsonify(return_users_schema.dump(unique_patients)), 200

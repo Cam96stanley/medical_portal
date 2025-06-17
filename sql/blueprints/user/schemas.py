@@ -9,6 +9,9 @@ class UserSchema(ma.SQLAlchemyAutoSchema):
   class Meta:
     model = User
     load_instance = True
+    include_fk = True
+    
+  password = fields.String(load_only=True, required=True)
     
   @validates_schema
   def validate_dob_for_patients(self, data, **kwargs):

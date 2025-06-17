@@ -1,7 +1,8 @@
 swagger: "2.0"
 info:
   title: "Health Portal"
-  description: ""
+  description: >
+    "Backend to my medical portal app, for coordinating care between doctors and patients with chronic conditions. Endpoints allow for patients to track their vitals, appointments, and medications. Doctors are able to add medications and diagnoses for specific patients."
   version: "1.0.0"
 host: "127.0.0.1:5000"
 schemes:
@@ -10,5 +11,69 @@ consumes:
   - "application/json"
 produces:
   - "application/json"
-paths: {}
-definitions: {}
+paths:
+  /users:
+    post:
+      summary: Create a new user
+      description: Registers a new patient or doctor user.
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: user
+          description: User object to create
+          required: true
+          schema:
+            $ref: "#/definitions/User"
+      responses:
+        201:
+          description: User created successfully
+          schema:
+            $ref: "#/definitions/User"
+          examples:
+            application/json:
+              id: 1
+              name: "Jane Doe"
+              email: "jane.doe@example.com"
+        400:
+          description: Invalid input or user already exists
+definitions:
+  LoginCredentials:
+    type: "object"
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+
+    required:
+      - email
+      - password
+
+  LoginResponse:
+    type: object
+    properties:
+      token:
+        type: string
+      message:
+        type: string
+      user:
+        type: array
+        items:
+          $ref: "#/definitions/User"
+
+  User:
+    type: "object"
+    required:
+      - id
+      - name
+      - email
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      email:
+        type: string

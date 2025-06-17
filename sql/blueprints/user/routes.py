@@ -34,13 +34,24 @@ def login_user():
 
 @user_bp.route("/", methods=["POST"])
 def create_user():
-    user_data = user_schema.load(request.json)
-    user_data.password = hash_password(user_data.password)
+  try:
+    data = request.json
     
-    db.session.add(user_data)
+    user = user_schema.load(data)
+    
+    db.session.add(user)
     db.session.commit()
     
-    return jsonify(return_user_schema.dump(user_data)), 201
+    return jsonify(return_user_schema.dump(user)), 201
+  
+  except IntegrityError as e:
+    db.session.rollback()
+    return jsonify({"message": "Email already exists"}), 409
+    
+  
+  except ValidationError as e:
+    return jsonify(e.messages), 400
+
 
 
 @user_bp.route("/", methods=["GET"])
