@@ -2,7 +2,20 @@ swagger: "2.0"
 info:
   title: "Health Portal"
   description: >
-    "Backend to my medical portal app, for coordinating care between doctors and patients with chronic conditions. Endpoints allow for patients to track their vitals, appointments, and medications. Doctors are able to add medications and diagnoses for specific patients."
+    This is the backend API for the Chronic Care Medical Portal — a system designed to coordinate care between doctors and patients managing long-term conditions.
+
+
+    - **Patients** can:
+      - Track vitals (e.g., blood pressure, glucose)
+      - Manage and view appointments
+      - View their medications and diagnoses
+
+    - **Doctors** can:
+      - Add and update medications for their patients
+      - Add diagnoses for specific patients
+      - Review tracked vitals and appointment history
+
+    Please refer to the data models and endpoint documentation for detailed request and response formats, field requirements, and validation rules.
   version: "1.0.0"
 host: "127.0.0.1:5000"
 schemes:
@@ -11,9 +24,58 @@ consumes:
   - "application/json"
 produces:
   - "application/json"
+securityDefinitions:
+  bearerAuth:
+    type: apiKey
+    name: Authorization
+    in: header
+
 paths:
+  /login:
+    post:
+      tags:
+        - User
+      summary: Log in a user
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: Login credentials
+          description: Credentials used to log in a user
+          required: true
+          schema:
+            $ref: "#/definitions/LoginCredentials"
+      responses:
+        200:
+          description: User logged in successfully
+          schema:
+            $ref: "#/definitions/LoginResponse"
+          examples:
+            application/json:
+              message: "User logged in successfully"
+              token: ";lnnna;A;LSKND..."
+              user:
+                id: 1
+                email: "jane.doe@example.com"
+                name: "Jane Doe"
+                role: "patient"
+        400:
+          description: Missing email or password
+          examples:
+            application/json:
+              message: "Email and password are required"
+        401:
+          description: Invalid email or password
+          examples:
+            application/json:
+              message: "Invalid email or password"
+
   /users:
     post:
+      tags:
+        - User
       summary: Create a new user
       description: Registers a new patient or doctor user.
       consumes:
@@ -38,7 +100,142 @@ paths:
               name: "Jane Doe"
               email: "jane.doe@example.com"
         400:
-          description: Invalid input or user already exists
+          description: >
+            Validation error (e.g., missing fields, invalid enum value, or missing dob for patient)
+          examples:
+            application/json:
+              message: "Validation error"
+              errors:
+                role: ["Must be one of: patient, doctor"]
+                dob: ["Date of birth is required for patients"]
+        409:
+          description: Email already exists
+          examples:
+            application/json:
+              message: "A user with this email already exists"
+        500:
+          description: Internal server error
+          examples:
+            application/json:
+              message: "An unexpected error occured"
+    get:
+      tags:
+        - User
+      summary: Get all users
+      description: Get information about all users, both patients and doctors.
+      produces:
+        - application/json
+      responses:
+        200:
+          description: Users retrieved successfully
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/PublicUser"
+          examples:
+            application/json:
+              - id: 1
+                dob: "1985-02-16"
+                email: "john.doe@test.com"
+                name: "John Doe"
+                role: "patient"
+              - id: 2
+                dob: null
+                email: "dr.smith@test.com"
+                name: "Dr. Jane Smith"
+                role: "doctor"
+        404:
+          description: No users found
+          examples:
+            application/json:
+              message: "No users found"
+        500:
+          description: Internal server error
+          examples:
+            application/json:
+              message: "An unexpected error occured"
+
+  /users/me:
+    get:
+      tags:
+        - User
+      summary: Get current user
+      description: Get information about the currently logged in user
+      security:
+        - bearerAuth: []
+      produces:
+        - application/json
+      responses:
+        200:
+          description: User retrieved successfully
+          schema:
+            $ref: "#/definitions/PublicUser"
+          examples:
+            application/json:
+              id: 1
+              dob: "1985-02-16"
+              email: "john.doe@test.com"
+              name: "John Doe"
+              role: "patient"
+        401:
+          description: Unauthorized
+          examples:
+            application/json:
+              message: "Token is missing or invalid"
+        404:
+          description: User not found
+          examples:
+            application/json:
+              message: "No user found"
+
+    patch:
+      tags:
+        - User
+      summary: Update current user
+      description: >
+        Update a user's non-sensitive information.  
+        **Do not** use this route to update passwords.  
+        For password changes, use the `/users/me/password` route.
+
+      security:
+        - bearerAuth: []
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: user
+          description: Fields to update (excluding password)
+          required: true
+          schema:
+            $ref: "#/definitions/UserUpdate"
+      responses:
+        200:
+          description: User updated successfully
+          schema:
+            $ref: "#/definitions/PublicUser"
+        400:
+          description: Validation error
+          examples:
+            application/json:
+              message: "Date of birth is reuqired for patients"
+        401:
+          description: Unauthorized - Token missing or invalid
+          examples:
+            application/json:
+              message: "Token is missing or invalid"
+        404:
+          description: User not found
+          examples:
+            application/json:
+              message: "User not found"
+        409:
+          description: Email already in use
+          examples:
+            application/json:
+              message: "Email already in use"
+
 definitions:
   LoginCredentials:
     type: "object"
@@ -60,9 +257,20 @@ definitions:
       message:
         type: string
       user:
-        type: array
-        items:
-          $ref: "#/definitions/User"
+        type: object
+        properties:
+          id:
+            type: integer
+            format: int64
+          name:
+            type: string
+          email:
+            type: string
+          role:
+            type: string
+            enum: [patient, doctor]
+            description: >
+              Date of birth is required for users with role "patient", optional for "doctor"
 
   User:
     type: "object"
@@ -70,10 +278,70 @@ definitions:
       - id
       - name
       - email
+      - password
+      - role
     properties:
       id:
         type: integer
+        format: int64
       name:
         type: string
       email:
         type: string
+      password:
+        type: string
+      role:
+        type: string
+        enum: [patient, doctor]
+        description: >
+          Role can only be either "patient" or "doctor", no other values are accepted.
+      dob:
+        type: string
+        format: date
+        description: >
+          Date of birth is required for users with role "patient", optional for "doctor"
+
+  PublicUser:
+    type: object
+    required:
+      - id
+      - name
+      - email
+      - role
+    properties:
+      id:
+        type: integer
+        format: int64
+      name:
+        type: string
+      email:
+        type: string
+      role:
+        type: string
+        enum: [patient, doctor]
+        description: >
+          Date of birth is required for users with role "patient", optional for "doctor"
+      dob:
+        type: string
+        format: date
+        description: >
+          Date of birth is required for users with the role "patient", optional for "doctor"
+
+  UserUpdate:
+    type: object
+    properties:
+      name:
+        type: string
+      email:
+        type: string
+      dob:
+        type: string
+        format: date
+      role:
+        type: string
+        enum: [patient, doctor]
+    example:
+      name: "John Doe"
+      email: "j.doe@example.com"
+      dob: "1990-05-20"
+      role: "patient"

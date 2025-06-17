@@ -1,3 +1,4 @@
+import traceback
 from flask import request, jsonify
 from marshmallow import ValidationError
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -11,12 +12,12 @@ def login_user():
   data = request.get_json()
   
   if not data or not data.get("email") or not data.get("password"):
-    return jsonify({"error": "Email and password are required"}), 400
+    return jsonify({"message": "Email and password are required"}), 400
   
   user = db.session.query(User).filter_by(email=data["email"]).first()
   
   if not user or not check_password(data["password"], user.password):
-    return jsonify({"error": "Invalid email or password"}), 401
+    return jsonify({"message": "Invalid email or password"}), 401
   
   token = generate_token(user)
   
@@ -36,33 +37,57 @@ def login_user():
 def create_user():
   try:
     data = request.json
-    
     user = user_schema.load(data)
-    
     db.session.add(user)
     db.session.commit()
-    
     return jsonify(return_user_schema.dump(user)), 201
   
-  except IntegrityError as e:
-    db.session.rollback()
-    return jsonify({"message": "Email already exists"}), 409
-    
-  
   except ValidationError as e:
-    return jsonify(e.messages), 400
-
+    errors = e.messages
+    
+    if "role" in errors and isinstance(errors["role"], list):
+      errors["role"] = ["Role must be 'patient' or 'doctor'"]
+    return jsonify({
+      "message": "Validation error",
+      "errors": errors
+    }), 400
+  
+  except IntegrityError:
+    db.session.rollback()
+    return jsonify({
+      "message": "A user with this email already exists"
+      }), 409
+  
+  except SQLAlchemyError:
+    db.session.rollback()
+    return jsonify({
+      "message": "An unexpected database error occured"
+    }), 500
+  
+  except Exception as e:
+    print(f"Exception type: {type(e)}")
+    print(traceback.format_exc())
+    return jsonify({
+      "message": "An unexpected error occured",
+      "details": str(e)
+    }), 500
 
 
 @user_bp.route("/", methods=["GET"])
 def get_users():
-  query = db.session.query(User)
-  users = db.session.execute(query).scalars().all()
+  try: 
+    users = db.session.query(User).all()
+    
+    if not users:
+      return jsonify({"message": "No users found"}), 404
+    
+    return jsonify(return_users_schema.dump(users)), 200
   
-  if not users:
-    return jsonify({"message": "No users found"})
-  
-  return jsonify(return_users_schema.dump(users)), 200
+  except Exception as e:
+    return jsonify({
+      "message": "An unexpected error occured",
+      "details": str(e)
+    }), 500
 
 
 @user_bp.route("/me", methods=["GET"])
@@ -72,7 +97,7 @@ def get_user(user_id):
   user = db.session.execute(query).scalars().first()
   
   if user is None:
-    return jsonify({"message": "No user found with that id"}), 404
+    return jsonify({"message": "No user found"}), 404
   
   return jsonify(return_user_schema.dump(user)), 200
 
@@ -83,7 +108,7 @@ def update_user(user_id):
   user = db.session.get(User, user_id)
   
   if not user:
-    return jsonify({"error": "user not found"}), 404
+    return jsonify({"message": "user not found"}), 404
   
   data = request.json
   
@@ -92,7 +117,7 @@ def update_user(user_id):
     updated_data = user_schema.load(data, partial=True)
     
     if "password" in data:
-      user.password = hash_password(data["password"])
+      return jsonify({"message": "Password updates are not allowed on this route, please use /me/password"}), 400
     
     for key, value in updated_data.items():
       if key != "password":
@@ -105,21 +130,7 @@ def update_user(user_id):
     return jsonify(err.messages), 400
   except IntegrityError:
     db.session.rollback()
-    return jsonify({"error": "Email already in use"}), 409
+    return jsonify({"message": "Email already in use"}), 409
   except Exception:
     db.session.rollback()
-    return jsonify({"error": "Database error"}), 500
-
-
-@user_bp.route("/me", methods=["DELETE"])
-@token_required
-def delete_user(user_id):
-  user = db.session.get(User, user_id)
-  
-  if not user:
-    return jsonify({"message": "User not found"}), 404
-  
-  db.session.delete(user)
-  db.session.commit()
-  
-  return jsonify({"message": f"User {user.id} deleted successfully"}), 200
+    return jsonify({"message": "Database error"}), 500
