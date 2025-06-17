@@ -38,6 +38,7 @@ def create_user():
   try:
     data = request.json
     user = user_schema.load(data)
+    user.password = hash_password(user.password)
     db.session.add(user)
     db.session.commit()
     return jsonify(return_user_schema.dump(user)), 201

@@ -13,6 +13,7 @@ db = SQLAlchemy(model_class=Base)
 class UserRole(enum.Enum):
   PATIENT = "patient"
   DOCTOR = "doctor"
+  ADMIN = "admin"
   
 class AppointmentStatus(enum.Enum):
   SCHEDULED = "scheduled"
@@ -48,9 +49,19 @@ class User(db.Model):
   
   role: Mapped[UserRole] = mapped_column(
       Enum(UserRole, values_callable=lambda x: [e.value for e in x]),
-      default=UserRole.PATIENT,
       nullable=False
   )
+  
+  is_active: Mapped[bool] = mapped_column(db.Boolean, default=True, nullable=False)
+  archived_at: Mapped[datetime] = mapped_column(db.DateTime, nullable=True)
+  
+  def archive(self):
+    self.is_active = False
+    self.archived_at = datetime.now(timezone.utc)
+    
+  def reactivate(self):
+    self.is_active = True
+    self.archived_at = None
 
 
 class Diagnosis(db.Model):

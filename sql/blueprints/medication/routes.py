@@ -1,12 +1,12 @@
 from flask import jsonify, request
 from marshmallow import ValidationError
-from sql.models import db
+from sql.models import UserRole, db
 from sql.blueprints.medication import medication_bp
 from sql.blueprints.medication.schemas import medication_schema
-from sql.utils.auth import doctor_required
+from sql.utils.auth import role_required
 
 @medication_bp.route("/", methods=["POST"])
-@doctor_required
+@role_required(UserRole.DOCTOR)
 def create_medication(doctor_id):
   data = request.get_json()
   

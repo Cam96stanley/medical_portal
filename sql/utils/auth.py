@@ -5,8 +5,6 @@ from datetime import datetime, timedelta, timezone
 from flask import current_app, jsonify, request
 import jose
 
-from sql.models import UserRole
-
 bcrypt = Bcrypt()
 
 def hash_password(plain_password: str) -> str:
@@ -25,6 +23,30 @@ def generate_token(user):
   token = jwt.encode(payload, current_app.config["SECRET_KEY"], algorithm="HS256")
   return token
 
+def role_required(*allowed_roles):
+  def decorator(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+      auth_header = request.headers.get("Authorization")
+      if not auth_header:
+        return jsonify({"message": "Missing token"}), 401
+      
+      try:
+        token = auth_header.split(" ")[1]
+        payload = jwt.decode(token, current_app.config["SECRET_KEY"], algorithms=["HS256"])
+        role = payload.get("role")
+        if role not in [r.value for r in allowed_roles]:
+          return jsonify({"message": f"{' or '.join(r.value for r in allowed_roles)} role required"}), 403
+        user_id = payload.get("sub")
+      except jose.exceptions.ExpiredSignatureError:
+        return jsonify({"message": "Token has expired"}), 401
+      except JWTError:
+        return jsonify({"message": "Invalid token"}), 401
+      
+      return f(*args, user_id=user_id, **kwargs)
+    return wrapper
+  return decorator
+
 def token_required(f):
   @wraps(f)
   def decorated(*args, **kwargs):
@@ -37,12 +59,12 @@ def token_required(f):
         token = parts[1]
       
     if not token:
-      print("Token not found")
       return jsonify({"message": "Token is missing"}), 401
     
     try:
       data = jwt.decode(token, current_app.config["SECRET_KEY"], algorithms=["HS256"])
       user_id = data["sub"]
+      role = data.get("role")
       
     except jose.exceptions.ExpiredSignatureError:
       return jsonify({"message": "Token has expired!"}), 401
@@ -50,25 +72,5 @@ def token_required(f):
     except jose.exceptions.JWTError:
       return jsonify({"message": "Invalid token!"}), 401
     
-    return f(user_id, *args, **kwargs)
+    return f(user_id, role, *args, **kwargs)
   return decorated
-
-
-def doctor_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        auth_header = request.headers.get("Authorization")
-        if not auth_header:
-            return jsonify({"message": "Missing token"}), 401
-
-        try:
-            token = auth_header.split(" ")[1]
-            payload = jwt.decode(token, current_app.config["SECRET_KEY"], algorithms=["HS256"])
-            if payload.get("role") != UserRole.DOCTOR.value:
-                return jsonify({"message": "Doctor role required"}), 403
-            doctor_id = payload.get("sub") 
-        except JWTError:
-            return jsonify({"message": "Invalid token"}), 401
-
-        return f(*args, doctor_id=doctor_id, **kwargs)
-    return decorated_function

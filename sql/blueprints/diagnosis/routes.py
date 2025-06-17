@@ -2,14 +2,15 @@ from flask import jsonify, request
 from marshmallow import ValidationError
 from sqlalchemy import func
 from sql.blueprints.diagnosis import diagnoses_bp
-from sql.models import db, Diagnosis, User
+from sql.models import UserRole, db, Diagnosis, User
 from sql.blueprints.diagnosis.schemas import diagnosis_schema, diagnoses_schema
 from sql.blueprints.user.schemas import return_users_schema
-from sql.utils.auth import doctor_required
+from sql.utils.auth import role_required
 
 @diagnoses_bp.route("/<int:patient_id>", methods=["POST"])
-@doctor_required
-def create_diagnosis(patient_id, doctor_id):
+@role_required(UserRole.DOCTOR)
+def create_diagnosis(patient_id, user_id):
+  doctor_id = user_id
   data = request.get_json()
   
   try:
@@ -41,9 +42,9 @@ def create_diagnosis(patient_id, doctor_id):
   return jsonify(diagnosis_schema.dump(diagnosis)), 201
 
 @diagnoses_bp.route("/patients/<diagnosis_name>", methods=["GET"])
-@doctor_required
-def get_patients_with_diagnosis(diagnosis_name, doctor_id):
-  diagnoses = Diagnosis.query.filter(func.lower(Diagnosis.diagnosis_name) == diagnosis_name.lower()).all()
+@role_required(UserRole.DOCTOR)
+def get_patients_with_diagnosis(diagnosis_name, user_id):
+  diagnoses = Diagnosis.query.filter(func.lower(Diagnosis.diagnosis_name) == diagnosis_name.lower(), Diagnosis.doctor_id == user_id).all()
   
   if not diagnoses:
     return jsonify({"message": "No patients found with this diagnosis"}), 404
