@@ -1,3 +1,4 @@
+from typing import Optional
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import Enum, Date, DateTime
@@ -14,7 +15,8 @@ class UserRole(enum.Enum):
   PATIENT = "patient"
   DOCTOR = "doctor"
   ADMIN = "admin"
-  
+
+
 class AppointmentStatus(enum.Enum):
   SCHEDULED = "scheduled"
   COMPLETED = "completed"
@@ -37,6 +39,7 @@ class EnumField(fields.Field):
       return self.enum(value.lower())
     except KeyError:
       raise ValidationError(f"Invalid value '{value}' for enum {self.enum.__name__}")
+
 
 class User(db.Model):
   __tablename__ = "users"
@@ -101,6 +104,7 @@ class Medication(db.Model):
   prescribed_by_name: Mapped[str] = mapped_column(db.String(150), nullable=True)
   
   active: Mapped[bool] = mapped_column(db.Boolean, default=True)
+  deactivation_reason: Mapped[Optional[str]] = mapped_column(db.String(250), nullable=True)
   
   patient = db.relationship("User", foreign_keys=[patient_id], backref="medications")
   prescriber = db.relationship("User", foreign_keys=[prescribed_by_id])

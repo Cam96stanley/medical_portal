@@ -37,10 +37,54 @@ def create_medication(patient_id, user_id):
 @medication_bp.route("/patients/<int:patient_id>", methods=["GET"])
 @role_required(UserRole.DOCTOR)
 def get_meds_for_user(patient_id, user_id):
+  try:
+    patient = User.query.get(patient_id)
+    if not patient or patient.role != UserRole.PATIENT:
+      return jsonify({"message": "Patient not found"}), 404
+    
+    medications = Medication.query.filter_by(patient_id=patient_id).all()
+    
+    if not medications:
+      return jsonify({"message": "No medications found for this patient"}), 200
+    
+    return jsonify(medications_schema.dump(medications)), 200
+  
+  except Exception as e:
+    return jsonify({
+      "message": "Internal server error",
+      "details": str(e)
+      }), 500
+    
+@medication_bp.route("/patients/<int:patient_id>/medications/<int:medication_id>/deactivate", methods=["PATCH"])
+@role_required(UserRole.DOCTOR)
+def deactivate_medication(patient_id, medication_id, user_id):
+  data = request.get_json()
+  reason = data.get("deactivation_reason", "").strip()
+  
+  if not reason:
+    return jsonify({"message": "Deactivation reason is required"}), 400
+  
   patient = User.query.get(patient_id)
   if not patient or patient.role != UserRole.PATIENT:
     return jsonify({"message": "Patient not found"}), 404
   
-  medications = Medication.query.filter_by(patient_id=patient_id).all()
+  medication = Medication.query.filter_by(id=medication_id, patient_id=patient_id).first()
+  if not medication:
+    return jsonify({"message": "Medication not found"}), 404
   
-  return jsonify(medications_schema.dump(medications)), 200
+  if not medication.active:
+    return jsonify({"message": "Medication is already inactive"}), 400
+  
+  try:
+    medication.active = False
+    medication.deactivation_reason = reason
+    db.session.commit()
+    return jsonify({
+      "message": "Mediaction successfully deactivated"
+      }), 200
+  
+  except Exception as e:
+    return jsonify({
+      "message": "Failed to deactivate medication",
+      "details": str(e)
+    }), 500
