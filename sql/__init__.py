@@ -1,6 +1,6 @@
 from flask import Flask
 from sql.models import db
-from sql.extensions import ma
+from sql.extensions import ma, migrate
 from sql.blueprints.user import user_bp
 from sql.blueprints.diagnosis import diagnoses_bp
 from sql.blueprints.medication import medication_bp
@@ -23,6 +23,7 @@ def create_app(config_name):
   
   db.init_app(app)
   ma.init_app(app)
+  migrate.init_app(app, db)
   
   app.register_blueprint(user_bp, url_prefix="/users")
   app.register_blueprint(diagnoses_bp, url_prefix="/diagnoses")
