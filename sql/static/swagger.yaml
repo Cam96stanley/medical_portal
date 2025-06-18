@@ -523,7 +523,7 @@ paths:
             application/json:
               message: "Internal server error"
 
-  /medications/patients/{patient_id}/medications/{medication_id}/deactivate:
+  /medications/{medication_id}/patients/{patient_id}/deactivate:
     patch:
       tags:
         - Medication

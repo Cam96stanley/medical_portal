@@ -55,7 +55,7 @@ def get_meds_for_user(patient_id, user_id):
       "details": str(e)
       }), 500
     
-@medication_bp.route("/patients/<int:patient_id>/medications/<int:medication_id>/deactivate", methods=["PATCH"])
+@medication_bp.route("/<int:medication_id>/patients/<int:patient_id>/deactivate", methods=["PATCH"])
 @role_required(UserRole.DOCTOR)
 def deactivate_medication(patient_id, medication_id, user_id):
   data = request.get_json()
