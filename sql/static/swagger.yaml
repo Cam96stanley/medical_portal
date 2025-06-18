@@ -462,6 +462,67 @@ paths:
             application/json:
               message: "Internal server error"
 
+  /medications/patients/{patient_id}:
+    get:
+      tags:
+        - Medication
+      summary: Get all medications for a patient
+      description: >
+        Retrieves all medications for a patient
+
+        **Roles allowed:** doctor
+      security:
+        - bearerAuth: []
+      produces:
+        - application/json
+      responses:
+        200:
+          description: Medications retrieved successfully
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/MedicationResponse"
+          examples:
+            application/json:
+              - id: 1
+                name: "Lisinopril"
+                dosage: "2.5 mg"
+                frequency: "QD"
+                prescribed_by_name: "Dr. Jane Smith"
+                active: true
+                patient:
+                  id: 2
+                  name: "John Doe"
+              - id: 2
+                name: "Asprin"
+                dosage: ".5 mg"
+                frequency: "QD"
+                prescribed_by_name: "Dr. Jane Smith"
+                active: true
+                patient:
+                  id: 2
+                  name: "John Doe"
+        401:
+          description: Unauthorized - user not logged in or token missing
+          examples:
+            application/json:
+              message: "Authorization token is missing or invalid"
+        403:
+          description: Forbidden - user does not have doctor role
+          examples:
+            application/json:
+              message: "doctor role required"
+        404:
+          description: Patient not found
+          examples:
+            application/json:
+              message: "Patient not found"
+        500:
+          description: Internal server error
+          examples:
+            application/json:
+              message: "Internal server error"
+
 definitions:
   LoginCredentials:
     type: "object"
