@@ -523,6 +523,74 @@ paths:
             application/json:
               message: "Internal server error"
 
+  /medications/patients/{patient_id}/medications/{medication_id}/deactivate:
+    patch:
+      tags:
+        - Medication
+      summary: Deactivate a medication for a specific patient
+      description: >
+        Deactivates a medication that was prescribed to a patient. Only the prescribing doctor can deactivate the medication. A deactivation reason is required when deactivating.
+      security:
+        - bearerAuth: []
+      produces:
+        - application/json
+      consumes:
+        - application/json
+      parameters:
+        - name: patient_id
+          in: path
+          required: true
+          description: ID of the patient
+          type: integer
+        - name: medication_id
+          in: path
+          required: true
+          description: ID of the medication
+          type: integer
+        - name: body
+          in: body
+          required: true
+          description: reason for medication deactivation
+          schema:
+            type: object
+            required:
+              - deactivation_reason
+            properties:
+              deactivation_reason:
+                type: string
+                example: "Patient no longer takes this"
+      responses:
+        200:
+          description: Medication deactivated successfully
+          examples:
+            application/json:
+              message: "Medication successfully deactivated"
+        400:
+          description: Bad request (e.g. already inactive or missing reason)
+          examples:
+            application/json:
+              message: "Medication is already inactive"
+        401:
+          description: Unauthorized - user not logged in or token missing
+          examples:
+            application/json:
+              message: "Authorization token is missing or invalid"
+        403:
+          description: Forbidden - not the prescribing doctor
+          examples:
+            application/json:
+              message: "Not the prescribing doctor"
+        404:
+          description: Patient or medication not found
+          examples:
+            application/json:
+              message: "Patient not found"
+        500:
+          description: Internal server error
+          examples:
+            application/json:
+              message: "Internal server error"
+
 definitions:
   LoginCredentials:
     type: "object"
