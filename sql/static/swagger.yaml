@@ -277,7 +277,7 @@ paths:
           required: true
           description: Diagnosis object to create
           schema:
-            $ref: "#/definitions/Diagnosis"
+            $ref: "#/definitions/DiagnosisRequest"
       responses:
         201:
           description: User created successfully
@@ -393,6 +393,75 @@ paths:
             application/json:
               message: "An unexpected error occurred"
 
+  /medications/{patient_id}:
+    post:
+      tags:
+        - Medication
+      summary: Create medication for a patient
+      description: >
+        Registers a medication for a patient
+
+        **Roles allowed:** doctor
+      security:
+        - bearerAuth: []
+      produces:
+        - application/json
+      consumes:
+        - application/json
+      parameters:
+        - name: patient_id
+          in: path
+          required: true
+          type: integer
+          description: ID of the patient you are adding the medication to
+        - in: body
+          name: medication
+          required: true
+          description: Medication object to create
+          schema:
+            $ref: "#/definitions/MedicationRequest"
+      responses:
+        201:
+          description: Medication created successfully
+          schema:
+            $ref: "#/definitions/MedicationResponse"
+          examples:
+            application/json:
+              id: 1
+              name: "Lisinopril"
+              dosage: "2.5 mg"
+              frequency: "QD"
+              prescribed_by_name: "Dr. Jane Smith"
+              active: true
+              patient:
+                id: 2
+                name: "John Doe"
+        400:
+          description: Validation error
+          examples:
+            application/json:
+              message: "No input data provided"
+        401:
+          description: Unauthorized - user not logged in or token missing
+          examples:
+            application/json:
+              message: "Authorization token is missing or invalid"
+        403:
+          description: Forbidden - user does not have doctor role
+          examples:
+            application/json:
+              message: "doctor role required"
+        404:
+          description: Patient not found
+          examples:
+            application/json:
+              message: "Patient not found"
+        500:
+          description: Internal server error
+          examples:
+            application/json:
+              message: "Internal server error"
+
 definitions:
   LoginCredentials:
     type: "object"
@@ -493,7 +562,26 @@ definitions:
         description: >
           Automatically is added when changing is_active to false
 
-  Diagnosis:
+  UserUpdate:
+    type: object
+    properties:
+      name:
+        type: string
+      email:
+        type: string
+      dob:
+        type: string
+        format: date
+      role:
+        type: string
+        enum: [patient, doctor]
+    example:
+      name: "John Doe"
+      email: "j.doe@example.com"
+      dob: "1990-05-20"
+      role: "patient"
+
+  DiagnosisRequest:
     type: object
     required:
       - diagnosis_name
@@ -518,24 +606,29 @@ definitions:
         description: Additional notes or context about the diagnosis
         example: "Patient has mild COPD symptoms"
 
-  UserUpdate:
+  MedicationRequest:
     type: object
+    required:
+      - name
+      - dosage
+      - frequency
     properties:
       name:
         type: string
-      email:
+        description: Name of the medication being added
+        example: "Lisinopril"
+      dosage:
         type: string
-      dob:
+        description: Dosage of the medication being added
+        example: "2.5 mg"
+      frequency:
         type: string
-        format: date
-      role:
+        description: Frequency of the medication being added
+        example: "QD"
+      prescribed_by_name:
         type: string
-        enum: [patient, doctor]
-    example:
-      name: "John Doe"
-      email: "j.doe@example.com"
-      dob: "1990-05-20"
-      role: "patient"
+        description: Optional, name of the doctor that prescribed the medication
+        example: "Dr. Jane Smith"
 
   DiagnosisResponse:
     type: object
@@ -571,3 +664,35 @@ definitions:
             format: int64
           name:
             type: string
+
+  MedicationResponse:
+    type: object
+    properties:
+      id:
+        type: integer
+        format: int64
+      name:
+        type: string
+        example: "Lisinopril"
+      dosage:
+        type: string
+        example: "2.5 mg"
+      frequency:
+        type: string
+        example: "QD"
+      prescribed_by_name:
+        type: string
+        example: "Dr. Jane Smith"
+      active:
+        type: boolean
+        example: true
+      patient:
+        type: object
+        properties:
+          id:
+            type: string
+            format: int64
+            example: 2
+          name:
+            type: string
+            example: "John Doe"

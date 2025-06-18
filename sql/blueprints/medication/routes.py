@@ -13,6 +13,10 @@ def create_medication(patient_id, user_id):
   if not data:
     return jsonify({"message": "No input data provided"}), 400
   
+  patient = User.query.get(patient_id)
+  if not patient or patient.role != UserRole.PATIENT:
+    return jsonify({"message": "Patient not found"}), 404
+  
   try:
     new_medication = medication_schema.load(data)
     new_medication.patient_id = patient_id
@@ -22,6 +26,13 @@ def create_medication(patient_id, user_id):
   
   except ValidationError as e:
     return jsonify({"message": e.messages}), 400
+  
+  except Exception as e:
+      db.session.rollback()
+      return jsonify({
+        "message": "Internal server error",
+        "details": str(e)
+        }), 500
 
 @medication_bp.route("/patients/<int:patient_id>", methods=["GET"])
 @role_required(UserRole.DOCTOR)

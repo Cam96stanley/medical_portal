@@ -94,8 +94,8 @@ class Medication(db.Model):
   patient_id: Mapped[int] = mapped_column(db.ForeignKey("users.id"), nullable=False)
   
   name: Mapped[str] = mapped_column(db.String(150), nullable=False)
-  dosage: Mapped[str] = mapped_column(db.String(100))
-  frequency: Mapped[str] = mapped_column(db.String(100))
+  dosage: Mapped[str] = mapped_column(db.String(100), nullable=False)
+  frequency: Mapped[str] = mapped_column(db.String(100), nullable=False)
   
   prescribed_by_id: Mapped[int] = mapped_column(db.ForeignKey("users.id"), nullable=True)
   prescribed_by_name: Mapped[str] = mapped_column(db.String(150), nullable=True)
