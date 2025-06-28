@@ -31,3 +31,31 @@ def create_bp_entry(patient_id):
     return jsonify({"message": str(e)}), 500
   
   return bloodpressure_schema.jsonify(bp_entry), 201
+
+
+@heart_rate_bp.route("/<int:patient_id>", methods=["POST"])
+@token_required
+def create_heartrate_entry(patient_id):
+  json_data = request.get_json()
+  if not json_data:
+    return jsonify({"message": "No input data"}), 400
+  
+  try:
+    heartrate_entry: HeartRate = heartrate_schema.load(json_data)
+  except ValidationError as e:
+    return json_data({"message": e.messages}), 400
+  
+  patient = db.session.get(User, patient_id)
+  if not patient:
+    return jsonify({"message": f"Patient with ID {patient_id} not found"}), 404
+  
+  heartrate_entry.patient_id = patient_id
+  db.session.add(heartrate_entry)
+  
+  try:
+    db.session.commit()
+  except Exception as e:
+    db.session.rollback()
+    return jsonify({"message": str(e)}), 500
+  
+  return heartrate_schema.jsonify(heartrate_entry), 201
