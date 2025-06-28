@@ -4,6 +4,7 @@ from sql.extensions import ma, migrate
 from sql.blueprints.user import user_bp
 from sql.blueprints.diagnosis import diagnoses_bp
 from sql.blueprints.medication import medication_bp
+from sql.blueprints.goal import goal_bp
 from flask_swagger_ui import get_swaggerui_blueprint
 
 SWAGGER_URL = "/api/docs"
@@ -28,6 +29,7 @@ def create_app(config_name):
   app.register_blueprint(user_bp, url_prefix="/users")
   app.register_blueprint(diagnoses_bp, url_prefix="/diagnoses")
   app.register_blueprint(medication_bp, url_prefix="/medications")
+  app.register_blueprint(goal_bp, url_prefix="/goals")
   app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
   
   return app
