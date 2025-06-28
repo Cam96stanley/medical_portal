@@ -3,7 +3,7 @@ from flask import jsonify, request
 from marshmallow import ValidationError
 from sql.blueprints.goal import goal_bp
 from sql.models import db, Goal, UserRole, User
-from sql.blueprints.goal.schemas import goal_schema
+from sql.blueprints.goal.schemas import goal_schema, goals_schema
 from sql.utils.auth import role_required
 
 @goal_bp.route("/<int:patient_id>", methods=["POST"])
@@ -42,3 +42,18 @@ def create_goal(patient_id, user_id):
   except Exception as e:
     db.session.rollback()
     return jsonify({"message": str(e)}), 500
+
+
+@goal_bp.route("/<int:patient_id>", methods=["GET"])
+@role_required(UserRole.DOCTOR)
+def get_all_goals(patient_id, user_id):
+  patient = db.session.get(User, patient_id)
+  if not patient:
+    return jsonify({"message": "Patient not found"}), 404
+  
+  goals = Goal.query.filter_by(patient_id=patient_id).all()
+  
+  if not goals:
+    return jsonify({"message": "No goals found for this user"}), 404
+  
+  return jsonify(goals_schema.dump(goals)), 200
