@@ -59,3 +59,59 @@ def create_heartrate_entry(patient_id):
     return jsonify({"message": str(e)}), 500
   
   return heartrate_schema.jsonify(heartrate_entry), 201
+
+
+@weight_bp.route("/<int:patient_id>", methods=["POST"])
+@token_required
+def create_weight_entry(patient_id):
+  json_data = request.get_json()
+  if not json_data:
+    return jsonify({"message": "No input data"}), 400
+  
+  try:
+    weight_entry: Weight = weight_schema.load(json_data)
+  except ValidationError as e:
+    return jsonify({"message": e.messages}), 400
+  
+  patient = db.session.get(User, patient_id)
+  if not patient:
+    return jsonify({"message": f"Patient with ID {patient_id} not found"}), 404
+  
+  weight_entry.patient_id = patient_id
+  db.session.add(weight_entry)
+  
+  try:
+    db.session.commit()
+  except Exception as e:
+    db.session.rollback()
+    return jsonify({"message": str(e)}), 500
+  
+  return weight_schema.jsonify(weight_entry), 201
+
+
+@glucose_bp.route("/<int:patient_id>", methods=["POST"])
+@token_required
+def create_glucose_entry(patient_id):
+  json_data = request.get_json()
+  if not json_data:
+    return jsonify({"message": "No input data"}), 400
+  
+  try:
+    glucose_entry: Glucose = glucose_schema.load(json_data)
+  except ValidationError as e:
+    return jsonify({"message": e.messages}), 400
+  
+  patient = db.session.get(User, patient_id)
+  if not patient:
+    return jsonify({"message": f"Patient with ID {patient_id} not found"}), 404
+  
+  glucose_entry.patient_id = patient_id
+  db.session.add(glucose_entry)
+  
+  try:
+    db.session.commit()
+  except Exception as e:
+    db.session.rollback()
+    return jsonify({"message": str(e)}), 500
+  
+  return glucose_schema.jsonify(glucose_entry), 201

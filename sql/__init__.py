@@ -33,8 +33,8 @@ def create_app(config_name):
   app.register_blueprint(goal_bp, url_prefix="/goals")
   app.register_blueprint(blood_pressure_bp, url_prefix="/bp")
   app.register_blueprint(heart_rate_bp, url_prefix="/heartrate")
-  app.register_blueprint(weight_bp, url_prefix="weight")
-  app.register_blueprint(glucose_bp, url_prefix="glucose")
+  app.register_blueprint(weight_bp, url_prefix="/weight")
+  app.register_blueprint(glucose_bp, url_prefix="/glucose")
   app.register_blueprint(temperature_bp, url_prefix="temperature")
   app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
   
