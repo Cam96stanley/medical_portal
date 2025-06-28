@@ -72,5 +72,5 @@ def token_required(f):
     except jose.exceptions.JWTError:
       return jsonify({"message": "Invalid token!"}), 401
     
-    return f(user_id, role, *args, **kwargs)
+    return f(*args, **kwargs)
   return decorated

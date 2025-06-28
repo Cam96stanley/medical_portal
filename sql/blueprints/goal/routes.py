@@ -57,3 +57,6 @@ def get_all_goals(patient_id, user_id):
     return jsonify({"message": "No goals found for this user"}), 404
   
   return jsonify(goals_schema.dump(goals)), 200
+
+
+# Create logic to automate changing is_complete to true when goal is completed
