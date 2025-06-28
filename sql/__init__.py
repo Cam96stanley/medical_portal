@@ -35,7 +35,7 @@ def create_app(config_name):
   app.register_blueprint(heart_rate_bp, url_prefix="/heartrate")
   app.register_blueprint(weight_bp, url_prefix="/weight")
   app.register_blueprint(glucose_bp, url_prefix="/glucose")
-  app.register_blueprint(temperature_bp, url_prefix="temperature")
+  app.register_blueprint(temperature_bp, url_prefix="/temperature")
   app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
   
   return app
