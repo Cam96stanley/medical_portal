@@ -591,6 +591,136 @@ paths:
             application/json:
               message: "Internal server error"
 
+  /goals/{patient_id}:
+    post:
+      tags:
+        - Goal
+      summary: Create a goal for a patient
+      description: >
+        Create a goal for a patient. You must be logged in as a doctor to access this route.
+      security:
+        - bearerAuth: []
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: patient_id
+          in: path
+          required: true
+          description: The ID of the patient you are creating a goal for.
+          type: integer
+        - in: body
+          name: goal
+          required: true
+          description: Goal object to create
+          schema:
+            $ref: "#/definitions/GoalRequest"
+      responses:
+        201:
+          description: Medication created successfully
+          schema:
+            $ref: "#/definitions/GoalResponse"
+          examples:
+            application/json:
+              id: 1
+              title: "Walk 30 minutes daily"
+              description: >
+                "Patient should take a 30-minute walk every day to improve cardiovascular health"
+              is_complete: false
+              target_date: "2025-07-31"
+              created_at: "2025-06-30T17:08:26"
+        400:
+          description: Validation error
+          examples:
+            application/json:
+              message: "No input data provided"
+        401:
+          description: Unauthorized - user not logged in or token missing
+          examples:
+            application/json:
+              message: "Authorization token is missing or invalid"
+        403:
+          description: Forbidden - user does not have doctor role
+          examples:
+            application/json:
+              message: "doctor role required"
+        404:
+          description: Patient not found
+          examples:
+            application/json:
+              message: "Patient not found"
+        500:
+          description: Internal server error
+          examples:
+            application/json:
+              message: "Internal server error"
+
+    get:
+      tags:
+        - Goal
+      summary: Get all goals for a patient
+      description: >
+        Get a list of all goals for the currently logged in doctors patients.
+      security:
+        - bearerAuth: []
+      produces:
+        - application/json
+      parameters:
+        - name: patient_id
+          in: path
+          required: true
+          description: The ID of the patient you want to get the list of goals for.
+          type: integer
+      responses:
+        200:
+          description: List of goals for the patient
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/GoalResponse"
+          examples:
+            application/json:
+              - id: 1
+                title: "Walk 30-minutes daily"
+                description: >
+                  "Patient should take a 30-minute walk every day to improve cardiovascular health"
+                is_complete: false
+                target_date: "2025-07-30"
+                created_at: "2025-06-30T17:08:26"
+              - id: 2
+                title: "Keep glucose below 200"
+                description: >
+                  "Patient should try to keep glucose below 200 to improve glucose"
+                is_complete: false
+                target_date: "2025-07-30"
+                created_at: "2025-06-30T17:08:26"
+        400:
+          description: Validation error
+          examples:
+            application/json:
+              message: "No input data provided"
+        401:
+          description: Unauthorized - user not logged in or token missing
+          examples:
+            application/json:
+              message: "Authorization token is missing or invalid"
+        403:
+          description: Forbidden - user does not have doctor role
+          examples:
+            application/json:
+              message: "doctor role required"
+        404:
+          description: Patient not found
+          examples:
+            application/json:
+              message: "Patient not found"
+        500:
+          description: Internal server error
+          examples:
+            application/json:
+              message: "Internal server error"
+
 definitions:
   LoginCredentials:
     type: "object"
@@ -758,6 +888,40 @@ definitions:
         type: string
         description: Optional, name of the doctor that prescribed the medication
         example: "Dr. Jane Smith"
+
+  GoalRequest:
+    type: object
+    required:
+      - title
+      - description
+      - target_date
+    properties:
+      title:
+        type: string
+      description:
+        type: string
+      target_date:
+        type: string
+        format: date
+
+  GoalResponse:
+    type: object
+    properties:
+      id:
+        type: integer
+        format: int64
+      title:
+        type: string
+      description:
+        type: string
+      target_date:
+        type: string
+        format: date
+      created_at:
+        type: string
+        format: datetime
+      is_complete:
+        type: boolean
 
   DiagnosisResponse:
     type: object
